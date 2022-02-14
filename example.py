@@ -1,4 +1,5 @@
 from utils import *
+from torchvision.models.segmentation import lraspp_mobilenet_v3_large
 
 
 def main():
@@ -8,20 +9,21 @@ def main():
     weight_decay = 0
     batch_size = 16
     epoch_begin = 0
-    epoch_end = 5
+    epoch_end = 100
 
     dataset = 'Cityscapes'
-    name = 'test'
+    name = 'test_001'
     dataset_root = f'./{dataset}/data'
     model_root = f'./{dataset}/model/{name}'
     result_root = f'./{dataset}/result'
     image_root = f'./{dataset}/image'
 
-    net = torchvision.models.segmentation.lraspp_mobilenet_v3_large(
-        num_classes=34)
+    net = lraspp_mobilenet_v3_large(num_classes=20)
     device = get_device()
     optimizer = torch.optim.Adam(
-        net.to(device).parameters(), lr=learning_rate, weight_decay=weight_decay)
+        net.to(device).parameters(),
+        lr=learning_rate,
+        weight_decay=weight_decay)
 
     train_loader, val_loader = get_cityscapes(dataset_root, batch_size)
 

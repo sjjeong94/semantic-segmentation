@@ -7,6 +7,44 @@ import torchvision
 import transforms as T
 from tqdm import tqdm
 
+mapping_20 = {
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 1,
+    8: 2,
+    9: 0,
+    10: 0,
+    11: 3,
+    12: 4,
+    13: 5,
+    14: 0,
+    15: 0,
+    16: 0,
+    17: 6,
+    18: 0,
+    19: 7,
+    20: 8,
+    21: 9,
+    22: 10,
+    23: 11,
+    24: 12,
+    25: 13,
+    26: 14,
+    27: 15,
+    28: 16,
+    29: 0,
+    30: 0,
+    31: 17,
+    32: 18,
+    33: 19,
+    -1: 0
+}
+
 
 def set_seed(seed):
     random.seed(seed)
@@ -25,7 +63,7 @@ def get_device():
 
 
 class Cityscapes(torchvision.datasets.Cityscapes):
-    def __init__(self, root, split, mode, target_type, transform):
+    def __init__(self, root, split, mode, target_type, transform=None):
         super().__init__(root, split, mode, target_type)
         self.transform = transform
 
@@ -33,7 +71,17 @@ class Cityscapes(torchvision.datasets.Cityscapes):
         image, target = super().__getitem__(idx)
         if self.transform:
             image, target = self.transform(image, target)
-        return image, target
+        image = np.asarray(image, dtype=np.float32) / 255
+        target = np.asarray(target)
+
+        # convert class number
+        label = np.zeros_like(target, dtype=np.int64)
+        for k in mapping_20:
+            label[target == k] = mapping_20[k]
+
+        image = torch.from_numpy(image.transpose(2, 0, 1))
+        label = torch.from_numpy(label)
+        return image, label
 
 
 def get_cityscapes(root, batch_size):
@@ -41,19 +89,14 @@ def get_cityscapes(root, batch_size):
     T_train = T.Compose([
         T.RandomResize(512, 2048),
         T.RandomCrop(512),
-        T.RandomHorizontalFlip(0.5),
-        T.PILToTensor()
-    ])
-
-    T_val = T.Compose([
-        T.PILToTensor()
+        T.RandomHorizontalFlip(0.5)
     ])
 
     train_dataset = Cityscapes(
         root, 'train', 'fine', 'semantic', transform=T_train)
 
     val_dataset = Cityscapes(
-        root, 'val', 'fine', 'semantic', transform=T_val)
+        root, 'val', 'fine', 'semantic')
 
     print(train_dataset)
     print(val_dataset)
@@ -111,7 +154,7 @@ class Engine:
         self.net.train()
         losses = []
         for i, (x, y) in enumerate(tqdm(self.train_loader)):
-            x = x.to(self.device) / 255.  # normalize
+            x = x.to(self.device)
             y = y.to(self.device)
             self.optimizer.zero_grad()
 
@@ -133,7 +176,7 @@ class Engine:
         losses = []
         for i, (x, y) in enumerate(tqdm(self.val_loader)):
             with torch.no_grad():
-                x = x.to(self.device) / 255.  # normalize
+                x = x.to(self.device)
                 y = y.to(self.device)
 
                 out = self.net(x)['out']
