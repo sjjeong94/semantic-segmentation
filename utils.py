@@ -90,7 +90,6 @@ class Engine:
         optimizer,
         train_loader,
         val_loader,
-        num_epochs,
         model_root,
         result_root,
         image_root,
@@ -101,63 +100,73 @@ class Engine:
         self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
-        self.num_epochs = num_epochs
         self.model_root = model_root
         self.result_root = result_root
         self.image_root = image_root
 
-    def train(self):
+    def train_one_epoch(self, use_amp):
+        scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+
+        criterion = nn.CrossEntropyLoss()
+        self.net.train()
+        losses = []
+        for i, (x, y) in enumerate(tqdm(self.train_loader)):
+            x = x.to(self.device) / 255.  # normalize
+            y = y.to(self.device)
+            self.optimizer.zero_grad()
+
+            with torch.cuda.amp.autocast(enabled=use_amp):
+                out = self.net(x)['out']
+                loss = criterion(out, y)
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+
+            losses.append(loss.cpu().item())
+        loss_train = np.mean(losses)
+        return loss_train
+
+    def evaluate_one_epoch(self):
+
+        criterion = nn.CrossEntropyLoss()
+        self.net.eval()
+        losses = []
+        for i, (x, y) in enumerate(tqdm(self.val_loader)):
+            with torch.no_grad():
+                x = x.to(self.device) / 255.  # normalize
+                y = y.to(self.device)
+
+                out = self.net(x)['out']
+                loss = criterion(out, y)
+
+                losses.append(loss.cpu().item())
+        loss_val = np.mean(losses)
+        return loss_val
+
+    def train(self, epoch_begin=0, epoch_end=100, use_amp=True):
         os.makedirs(self.model_root, exist_ok=True)
         os.makedirs(self.result_root, exist_ok=True)
 
-        net = self.net
-        criterion = nn.CrossEntropyLoss()
-
         losses_train = []
-        losses_val = []
-        for epoch in range(1, self.num_epochs+1):
+        for epoch in range(epoch_begin, epoch_end+1):
 
-            net = net.train()
-            losses = []
-            for i, (x, y) in enumerate(tqdm(self.train_loader)):
-                x = x.to(self.device) / 255.  # normalize
-                y = y.to(self.device)
-                net.zero_grad()
-                out = net(x)['out']  # TODO: aux loss
-                loss = criterion(out, y)
-                loss.backward()
-                self.optimizer.step()
-                losses.append(loss.item())
-            loss_train = np.mean(losses)
-
-            net = net.eval()
-            losses = []
-            with torch.no_grad():
-                for i, (x, y) in enumerate(tqdm(self.val_loader)):
-                    x = x.to(self.device) / 255.
-                    y = y.to(self.device)
-                    out = net(x)['out']
-                    loss = criterion(out, y)
-                    losses.append(loss.item())
-            loss_val = np.mean(losses)
+            loss_train = self.train_one_epoch(use_amp)
 
             model_path = os.path.join(
                 self.model_root, '%s_epoch%03d.pth' % (self.name, epoch))
-            torch.save(net.cpu().state_dict(), model_path)
-            net = net.to(self.device)
+            torch.save(self.net.state_dict(), model_path)
 
             losses_train.append(loss_train)
-            losses_val.append(loss_val)
 
-            print('epoch %4d  |  loss %9.6f  %9.6f  |   model_path -> %s' %
-                  (epoch, loss_train, loss_val, model_path))
+            print('epoch %4d  |  loss %9.6f  |   model_path -> %s' %
+                  (epoch, loss_train, model_path))
 
-        result = np.array([losses_train, losses_val])
+        result = np.array(losses_train)
+
         result_path = os.path.join(self.result_root, '%s.npy' % self.name)
         np.save(result_path, result)
         print('result_path:', result_path)
 
-        self.net = net
         self.result = result
 
     def evaluate(self):
