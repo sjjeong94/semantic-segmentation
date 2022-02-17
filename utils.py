@@ -299,6 +299,15 @@ class CityscapesDemo:
 
         self.preds = preds
 
+    def get_colorview(self, pred):
+        H, W = pred.shape
+        view = np.zeros((H, W, 3), dtype=np.uint8)
+        for k in colormap.keys():
+            mask = k == pred
+            view[mask] = colormap[k]
+        view = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
+        return view
+
     def make_video(self, video_path):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         fps = 30
@@ -308,13 +317,7 @@ class CityscapesDemo:
         for i in tqdm(range(len(self.preds))):
             image = cv2.imread(self.paths[i])
             pred = self.preds[i]
-            H, W = pred.shape
-            view = np.zeros((H, W, 3), dtype=np.uint8)
-            for k in colormap.keys():
-                mask = k == pred
-                view[mask] = colormap[k]
-            view = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
-
+            view = self.get_colorview(pred)
             overlap = (image * 0.666 + view * 0.333).astype(np.uint8)
             overlap = cv2.resize(overlap, (w, h))
             video.write(overlap)
