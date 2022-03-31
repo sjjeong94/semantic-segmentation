@@ -8,6 +8,7 @@ import torchvision
 import transforms as T
 from PIL import Image
 from tqdm import tqdm
+from dataset import Comma10k
 
 mapping_20 = {
     0: 0,
@@ -104,6 +105,27 @@ def get_cityscapes(root, batch_size):
     print(val_dataset)
 
     # Data Loader
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_dataset, batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader
+
+
+def get_comm10k(root, batch_size):
+    T_train = T.Compose([
+        T.RandomResize(512, 1024),
+        T.RandomCrop(512),
+        T.RandomHorizontalFlip(0.5)
+    ])
+
+    train_dataset = Comma10k('../comma10k', True, T_train)
+    val_dataset = Comma10k('../comma10k', False)
+
+    print(train_dataset)
+    print(val_dataset)
+
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(
