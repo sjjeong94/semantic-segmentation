@@ -4,6 +4,7 @@ import json
 import torch
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 import transforms as T
 
@@ -23,7 +24,7 @@ class Comma10k(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         image, label = self.getdata(idx)
         image = np.asarray(image, dtype=np.float32) / 255
-        label = (np.asarray(label, dtype=np.int64)[:, :, 2] + 1) >> 6
+        label = (np.asarray(label, dtype=np.int64)[:, :, 0] + 1) >> 6
         image = torch.from_numpy(image.transpose(2, 0, 1))
         label = torch.from_numpy(label)
         return image, label
@@ -33,7 +34,7 @@ class Comma10k(torch.utils.data.Dataset):
         image_path = os.path.join(self.image_root, file)
         label_path = os.path.join(self.label_root, file)
         image = Image.open(image_path)
-        label = Image.fromarray(cv2.imread(label_path))
+        label = Image.open(label_path).convert('RGB')
         if self.transform:
             image, label = self.transform(image, label)
         return image, label
@@ -50,9 +51,9 @@ def test_getdata():
     print(len(comma10k))
 
     for i in range(len(comma10k)):
-        image, label = comma10k.get_data(i)
+        image, label = comma10k.getdata(i)
         cv2.imshow('image', np.asarray(image)[:, :, ::-1])
-        cv2.imshow('label', np.asarray(label))
+        cv2.imshow('label', np.asarray(label)[:, :, ::-1])
         key = cv2.waitKey(0)
         if key == 27:
             break
@@ -81,6 +82,13 @@ def test_getitem():
             break
 
 
+def test_speed():
+    train_dataset = Comma10k('../comma10k', False)
+    for i in tqdm(train_dataset):
+        pass
+
+
 if __name__ == '__main__':
-    # test_getdata()
-    test_getitem()
+    test_getdata()
+    # test_getitem()
+    # test_speed()
