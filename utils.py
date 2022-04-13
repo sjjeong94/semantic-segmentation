@@ -113,7 +113,7 @@ def get_cityscapes(root, batch_size):
     return train_loader, val_loader
 
 
-def get_comm10k(root, batch_size):
+def get_comm10k(root, batch_size, num_workers=0, pin_memory=False):
     T_train = T.Compose([
         T.RandomResize(512, 1024),
         T.RandomCrop(512),
@@ -127,9 +127,9 @@ def get_comm10k(root, batch_size):
     print(val_dataset)
 
     train_loader = torch.utils.data.DataLoader(
-        dataset=train_dataset, batch_size=batch_size, shuffle=True)
+        dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
     val_loader = torch.utils.data.DataLoader(
-        dataset=val_dataset, batch_size=batch_size, shuffle=False)
+        dataset=val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
     return train_loader, val_loader
 
@@ -176,7 +176,7 @@ class Engine:
 
         criterion = nn.CrossEntropyLoss()
         self.net.train()
-        losses = []
+        losses = 0
         for i, (x, y) in enumerate(tqdm(self.train_loader)):
             x = x.to(self.device)
             y = y.to(self.device)
@@ -189,15 +189,16 @@ class Engine:
             scaler.step(self.optimizer)
             scaler.update()
 
-            losses.append(loss.cpu().item())
-        loss_train = np.mean(losses)
+            losses += loss.detach()
+
+        loss_train = losses / len(self.train_loader)
         return loss_train
 
     def evaluate_one_epoch(self):
 
         criterion = nn.CrossEntropyLoss()
         self.net.eval()
-        losses = []
+        losses = 0
         for i, (x, y) in enumerate(tqdm(self.val_loader)):
             with torch.no_grad():
                 x = x.to(self.device)
@@ -206,8 +207,9 @@ class Engine:
                 out = self.net(x)['out']
                 loss = criterion(out, y)
 
-                losses.append(loss.cpu().item())
-        loss_val = np.mean(losses)
+                losses += loss.detach()
+
+        loss_val = losses / len(self.val_loader)
         return loss_val
 
     def train(self, epoch_begin=0, epoch_end=100, use_amp=True):
@@ -223,7 +225,7 @@ class Engine:
                 self.model_root, '%s_epoch%03d.pth' % (self.name, epoch))
             torch.save(self.net.state_dict(), model_path)
 
-            losses_train.append(loss_train)
+            losses_train.append(loss_train.cpu().numpy())
 
             print('epoch %4d  |  loss %9.6f  |   model_path -> %s' %
                   (epoch, loss_train, model_path))

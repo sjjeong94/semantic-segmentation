@@ -100,7 +100,7 @@ def train_comma10k():
 
     learning_rate = 0.0003
     weight_decay = 0
-    batch_size = 4
+    batch_size = 32
     epoch_begin = 1
     epoch_end = 1
 
@@ -110,8 +110,8 @@ def train_comma10k():
     result_root = f'./{dataset}/result'
     image_root = f'./{dataset}/image'
 
-    #net = lraspp_mobilenet_v3_large(num_classes=5)
-    net = deeplabv3_resnet101(num_classes=5)
+    net = lraspp_mobilenet_v3_large(num_classes=5)
+    #net = deeplabv3_resnet101(num_classes=5)
 
     device = get_device()
     optimizer = torch.optim.Adam(
@@ -119,7 +119,8 @@ def train_comma10k():
         lr=learning_rate,
         weight_decay=weight_decay)
 
-    train_loader, val_loader = get_comm10k('../comma10k', batch_size)
+    train_loader, val_loader = get_comm10k(
+        '../comma10k', batch_size, num_workers=4, pin_memory=True)
 
     print(net)
     print(device)
@@ -254,6 +255,6 @@ if __name__ == '__main__':
     # train()
     # test()
     # demo()
-    # train_comma10k()
+    train_comma10k()
     # test_comma10k()
-    evaluate_comma10k()
+    # evaluate_comma10k()

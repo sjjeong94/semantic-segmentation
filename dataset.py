@@ -83,12 +83,33 @@ def test_getitem():
 
 
 def test_speed():
-    train_dataset = Comma10k('../comma10k', False)
+    T_train = T.Compose([
+        T.RandomResize(512, 1024),
+        T.RandomCrop(512),
+        T.RandomHorizontalFlip(0.5)
+    ])
+
+    train_dataset = Comma10k('../comma10k', False, T_train)
     for i in tqdm(train_dataset):
         pass
 
 
+def test_dataloader():
+    T_train = T.Compose([
+        T.RandomResize(512, 1024),
+        T.RandomCrop(512),
+        T.RandomHorizontalFlip(0.5)
+    ])
+
+    train_dataset = Comma10k('../comma10k', False, T_train)
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset, batch_size=16, shuffle=True, num_workers=4)
+    for i in tqdm(train_loader):
+        pass
+
+
 if __name__ == '__main__':
-    test_getdata()
+    # test_getdata()
     # test_getitem()
     # test_speed()
+    test_dataloader()
