@@ -10,7 +10,9 @@ This is a PyTorch implementation of semantic segmentation models on [comma10k da
 ## comma10k
 
 ### 1-Epoch Training Results
-| Case | Model                     | Duration (s) | Train Loss | Val Loss |
-| ---- | ------------------------- | ------------ | ---------- | -------- |
-| 000  | lraspp_mobilenet_v3_large | 1419.1662    | 0.1236     | 0.1616   |
-| 001  | fcn_resnet50              | 1796.9648    | 0.1395     | 0.1984   |
+| Case  | Model                               | Duration (s) | Train Loss | Val Loss |
+| ----- | ----------------------------------- | ------------ | ---------- | -------- |
+| 000   | lraspp_mobilenet_v3_large (bs=2)    | 1419.1662    | 0.1236     | 0.1616   |
+| 001   | fcn_resnet50 (bs=2)                 | 1796.9648    | 0.1395     | 0.1984   |
+| 002   | deeplabv3_mobilenet_v3_large (bs=4) | 1812.6592    | 0.1099     | 0.0848   |
+| 002_1 | bs=8                                | 1731.3506    | 0.1141     | 0.0814   |

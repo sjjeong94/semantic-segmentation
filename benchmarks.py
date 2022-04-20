@@ -20,28 +20,17 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 
-def get_comm10k(root, batch_size, num_workers=0, pin_memory=False):
-
-    train_dataset = Comma10k('../comma10k', True)
-    val_dataset = Comma10k('../comma10k', False)
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
-    val_loader = torch.utils.data.DataLoader(
-        dataset=val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
-
-    return train_loader, val_loader
-
-
-def benchmarks(root, net):
+def benchmarks(
+    root,
+    net,
+    learning_rate=0.0003,
+    weight_decay=0,
+    batch_size=2,
+    num_workers=4,
+    pin_memory=True,
+):
     set_seed(1234)
     os.makedirs(root, exist_ok=True)
-
-    learning_rate = 0.0003
-    weight_decay = 0
-    batch_size = 2
-
-    dataset = 'Comma10k'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     net = net.to(device)
@@ -51,8 +40,13 @@ def benchmarks(root, net):
         lr=learning_rate,
         weight_decay=weight_decay)
 
-    train_loader, val_loader = get_comm10k(
-        '../comma10k', batch_size, num_workers=4, pin_memory=True)
+    train_dataset = Comma10k('../comma10k', True)
+    val_dataset = Comma10k('../comma10k', False)
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
     print(net)
     print(device)
@@ -104,4 +98,8 @@ def benchmarks(root, net):
 
 if __name__ == '__main__':
     #benchmarks('results/000', lraspp_mobilenet_v3_large(num_classes=5))
-    benchmarks('results/001', fcn_resnet50(num_classes=5))
+    #benchmarks('results/001', fcn_resnet50(num_classes=5))
+    # benchmarks('results/002',
+    #          deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=4)
+    benchmarks('results/002_1',
+               deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8)
