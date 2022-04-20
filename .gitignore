@@ -1,5 +1,6 @@
 __pycache__/
 Cityscapes/
 Comma10k/
+results/
 *.ipynb
 *.mp4
