@@ -26,6 +26,7 @@ def benchmarks(
     learning_rate=0.0003,
     weight_decay=0,
     batch_size=2,
+    normalize=False,
     num_workers=4,
     pin_memory=True,
 ):
@@ -40,8 +41,8 @@ def benchmarks(
         lr=learning_rate,
         weight_decay=weight_decay)
 
-    train_dataset = Comma10k('../comma10k', True)
-    val_dataset = Comma10k('../comma10k', False)
+    train_dataset = Comma10k('../comma10k', True, normalize=True)
+    val_dataset = Comma10k('../comma10k', False, normalize=True)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
@@ -101,5 +102,7 @@ if __name__ == '__main__':
     #benchmarks('results/001', fcn_resnet50(num_classes=5))
     # benchmarks('results/002',
     #          deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=4)
-    benchmarks('results/002_1',
+    # benchmarks('results/002_1',
+    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8)
+    benchmarks('results/002_2',
                deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8)

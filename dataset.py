@@ -10,13 +10,14 @@ import transforms as T
 
 
 class Comma10k(torch.utils.data.Dataset):
-    def __init__(self, root, train=True, transform=None):
+    def __init__(self, root, train=True, transform=None, normalize=False):
         self.transform = transform
         with open('comma10k.json', 'r') as json_file:
             file_names = json.load(json_file)
         self.files = file_names['train'] if train else file_names['val']
         self.image_root = os.path.join(root, 'imgs')
         self.label_root = os.path.join(root, 'masks')
+        self.normalize = normalize
 
     def __len__(self):
         return len(self.files)
@@ -24,6 +25,8 @@ class Comma10k(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         image, label = self.getdata(idx)
         image = np.asarray(image, dtype=np.float32) / 255
+        if self.normalize:
+            image = (image - 0.5) * 2
         label = (np.asarray(label, dtype=np.int64)[:, :, 0] + 1) >> 6
         image = torch.from_numpy(image.transpose(2, 0, 1))
         label = torch.from_numpy(label)
