@@ -126,9 +126,9 @@ def train(
         logger.info('| %12d | %12.4f | %12.4f | %12.4f | %12.4f |' %
                     (epoch, time_train, time_val, loss_train, loss_val))
 
-        model_path = os.path.join(model_path, 'model_%03d.pth' % epoch)
-        torch.save(net.state_dict(), model_path)
+        model_file = os.path.join(model_path, 'model_%03d.pth' % epoch)
+        torch.save(net.state_dict(), model_file)
 
 
 if __name__ == '__main__':
-    train('logs/comma10k/test')
+    train('logs/comma10k/test', epochs=5)
