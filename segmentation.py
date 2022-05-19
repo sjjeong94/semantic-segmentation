@@ -1,10 +1,11 @@
 import os
 import time
-import torch
+import logging
 import random
-import numpy as np
+import torch
 import torch.nn as nn
-from torchvision.models.segmentation import lraspp_mobilenet_v3_large, fcn_resnet50, deeplabv3_mobilenet_v3_large
+import numpy as np
+from torchvision.models.segmentation import deeplabv3_mobilenet_v3_large
 from dataset import Comma10k
 import transforms as T
 from tqdm import tqdm
@@ -20,21 +21,35 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 
-def benchmarks(
-    root,
-    net,
+def train(
+    logs_root,
+    net=deeplabv3_mobilenet_v3_large(num_classes=5),
+    data_root='data/comma10k',
     learning_rate=0.0003,
     weight_decay=0,
-    batch_size=2,
+    batch_size=16,
     epochs=1,
     normalize=False,
     random_crop=False,
     random_flip=False,
-    num_workers=4,
+    num_workers=1,
     pin_memory=True,
 ):
     set_seed(1234)
-    os.makedirs(root, exist_ok=True)
+    os.makedirs(logs_root, exist_ok=True)
+    model_path = os.path.join(logs_root, 'models')
+    os.makedirs(model_path, exist_ok=True)
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    file_handler = logging.FileHandler(
+        os.path.join(logs_root, 'train.log'))
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     net = net.to(device)
@@ -46,27 +61,30 @@ def benchmarks(
 
     T_train = []
     if random_crop:
-        T_train.extend([T.RandomResize(512, 1024), T.RandomCrop(512)])
+        T_train.extend([T.RandomResize(256, 512), T.RandomCrop(256)])
     if random_flip:
         T_train.append(T.RandomHorizontalFlip(0.5))
     T_train = T.Compose(T_train)
     print(T_train)
 
     train_dataset = Comma10k(
-        '../comma10k', True, normalize=normalize, transform=T_train)
-    val_dataset = Comma10k('../comma10k', False, normalize=normalize)
+        data_root, True, normalize=normalize, transform=T_train)
+    val_dataset = Comma10k(data_root, False, normalize=normalize)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
     val_loader = torch.utils.data.DataLoader(
         dataset=val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
-    print(net)
-    print(device)
-    print(optimizer)
+    logger.info(net)
+    logger.info(device)
+    logger.info(optimizer)
 
     scaler = torch.cuda.amp.GradScaler()
     criterion = nn.CrossEntropyLoss()
+
+    logger.info('| %12s | %12s | %12s | %12s | %12s |' %
+                ('epoch', 'time_train', 'time_val', 'loss_train', 'loss_val'))
 
     for epoch in range(epochs):
         t0 = time.time()
@@ -87,11 +105,12 @@ def benchmarks(
             losses += loss.detach()
         loss_train = losses / len(train_loader)
         t1 = time.time()
-        duration = t1 - t0
+        time_train = t1 - t0
 
+        t0 = time.time()
         net.eval()
         losses = 0
-        for i, (x, y) in enumerate(tqdm(val_loader)):
+        for x, y in tqdm(val_loader):
             with torch.no_grad():
                 x = x.to(device)
                 y = y.to(device)
@@ -100,30 +119,16 @@ def benchmarks(
                 loss = criterion(out, y)
 
                 losses += loss.detach()
-
         loss_val = losses / len(val_loader)
+        t1 = time.time()
+        time_val = t1 - t0
 
-        print('| epoch %3d | %12.4f | %12.4f | %12.4f |' %
-              (epoch, duration, loss_train, loss_val))
+        logger.info('| %12d | %12.4f | %12.4f | %12.4f | %12.4f |' %
+                    (epoch, time_train, time_val, loss_train, loss_val))
 
-        model_path = os.path.join(root, 'model_%03d.pth' % epoch)
+        model_path = os.path.join(model_path, 'model_%03d.pth' % epoch)
         torch.save(net.state_dict(), model_path)
 
 
 if __name__ == '__main__':
-    #benchmarks('results/000', lraspp_mobilenet_v3_large(num_classes=5))
-    #benchmarks('results/001', fcn_resnet50(num_classes=5))
-    # benchmarks('results/002',
-    #          deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=4)
-    # benchmarks('results/002_1',
-    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8)
-    # benchmarks('results/002_2',
-    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8, normalize=True)
-    # benchmarks('results/002_3',
-    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8, epochs=5, normalize=True)
-    # benchmarks('results/002_4',
-    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8, epochs=5, normalize=True, random_flip=True)
-    # benchmarks('results/002_5',
-    #           deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8, epochs=5, normalize=True, random_crop=True)
-    benchmarks('results/002_5',
-               deeplabv3_mobilenet_v3_large(num_classes=5), batch_size=8, epochs=30, normalize=True, random_crop=True)
+    train('logs/comma10k/test')

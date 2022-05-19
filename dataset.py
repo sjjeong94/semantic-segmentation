@@ -9,6 +9,26 @@ from tqdm import tqdm
 import transforms as T
 
 
+def prepare_data(root, save_path='./data/comma10k', size=(640, 480)):
+    img_path = os.path.join(root, 'imgs')
+    mask_path = os.path.join(root, 'masks')
+
+    img_save = os.path.join(save_path, 'imgs')
+    mask_save = os.path.join(save_path, 'masks')
+    os.makedirs(img_save, exist_ok=True)
+    os.makedirs(mask_save, exist_ok=True)
+
+    files = os.listdir(img_path)
+
+    for file in tqdm(files):
+        img = Image.open(os.path.join(img_path, file))
+        mask = Image.open(os.path.join(mask_path, file))
+        img = img.resize(size, Image.LANCZOS)
+        mask = mask.resize(size, Image.NEAREST)
+        img.save(os.path.join(img_save, file))
+        mask.save(os.path.join(mask_save, file))
+
+
 class Comma10k(torch.utils.data.Dataset):
     def __init__(self, root, train=True, transform=None, normalize=False):
         self.transform = transform
@@ -43,14 +63,18 @@ class Comma10k(torch.utils.data.Dataset):
         return image, label
 
 
+def test_prepare_data():
+    prepare_data('../comma10k')
+
+
 def test_getdata():
     T_train = T.Compose([
-        T.RandomResize(512, 1024),
-        T.RandomCrop(512),
+        # T.RandomResize(512, 1024),
+        # T.RandomCrop(512),
         T.RandomHorizontalFlip(0.5)
     ])
 
-    comma10k = Comma10k('../comma10k', True, T_train)
+    comma10k = Comma10k('data/comma10k', True, T_train)
     print(len(comma10k))
 
     for i in range(len(comma10k)):
@@ -69,7 +93,7 @@ def test_getitem():
         T.RandomHorizontalFlip(0.5)
     ])
 
-    comma10k = Comma10k('../comma10k', False, T_train)
+    comma10k = Comma10k('data/comma10k', False, T_train)
     print(len(comma10k))
 
     for i in range(len(comma10k)):
@@ -92,7 +116,7 @@ def test_speed():
         T.RandomHorizontalFlip(0.5)
     ])
 
-    train_dataset = Comma10k('../comma10k', False, T_train)
+    train_dataset = Comma10k('data/comma10k', False, T_train)
     for i in tqdm(train_dataset):
         pass
 
@@ -104,7 +128,7 @@ def test_dataloader():
         T.RandomHorizontalFlip(0.5)
     ])
 
-    train_dataset = Comma10k('../comma10k', False, T_train)
+    train_dataset = Comma10k('data/comma10k', False, T_train)
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset, batch_size=16, shuffle=True, num_workers=4)
     for i in tqdm(train_loader):
@@ -112,7 +136,8 @@ def test_dataloader():
 
 
 if __name__ == '__main__':
-    # test_getdata()
+    # test_prepare_data()
+    test_getdata()
     # test_getitem()
     # test_speed()
-    test_dataloader()
+    # test_dataloader()

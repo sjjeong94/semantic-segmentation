@@ -2,5 +2,7 @@ __pycache__/
 Cityscapes/
 Comma10k/
 results/
+data/
+logs/
 *.ipynb
 *.mp4
