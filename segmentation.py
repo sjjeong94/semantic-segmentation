@@ -24,7 +24,7 @@ def set_seed(seed):
 def train(
     logs_root,
     net=deeplabv3_mobilenet_v3_large(num_classes=5),
-    data_root='data/comma10k',
+    data_root='data/comma10k_128x96',
     learning_rate=0.0003,
     weight_decay=0,
     batch_size=16,
@@ -32,7 +32,7 @@ def train(
     normalize=False,
     random_crop=False,
     random_flip=False,
-    num_workers=1,
+    num_workers=2,
     pin_memory=True,
 ):
     set_seed(1234)
@@ -61,7 +61,7 @@ def train(
 
     T_train = []
     if random_crop:
-        T_train.extend([T.RandomResize(256, 512), T.RandomCrop(256)])
+        T_train.extend([T.RandomResize(96, 192), T.RandomCrop(96)])
     if random_flip:
         T_train.append(T.RandomHorizontalFlip(0.5))
     T_train = T.Compose(T_train)
@@ -90,7 +90,7 @@ def train(
         t0 = time.time()
         net.train()
         losses = 0
-        for i, (x, y) in enumerate(tqdm(train_loader)):
+        for x, y in tqdm(train_loader):
             x = x.to(device)
             y = y.to(device)
             optimizer.zero_grad()
@@ -131,4 +131,4 @@ def train(
 
 
 if __name__ == '__main__':
-    train('logs/comma10k/test', epochs=5)
+    train('logs/comma10k/test_128x96_0', epochs=10)

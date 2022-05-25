@@ -64,7 +64,7 @@ class Comma10k(torch.utils.data.Dataset):
 
 
 def test_prepare_data():
-    prepare_data('../comma10k')
+    prepare_data('../comma10k', './data/comma10k_128x96', (128, 96))
 
 
 def test_getdata():
@@ -74,7 +74,7 @@ def test_getdata():
         T.RandomHorizontalFlip(0.5)
     ])
 
-    comma10k = Comma10k('data/comma10k', True, T_train)
+    comma10k = Comma10k('data/comma10k_128x96', True, T_train)
     print(len(comma10k))
 
     for i in range(len(comma10k)):
