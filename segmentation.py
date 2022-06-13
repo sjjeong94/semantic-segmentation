@@ -124,11 +124,11 @@ def train(
         time_val = t1 - t0
 
         logger.info('| %12d | %12.4f | %12.4f | %12.4f | %12.4f |' %
-                    (epoch, time_train, time_val, loss_train, loss_val))
+                    (epoch + 1, time_train, time_val, loss_train, loss_val))
 
-        model_file = os.path.join(model_path, 'model_%03d.pth' % epoch)
+        model_file = os.path.join(model_path, 'model_%03d.pth' % (epoch + 1))
         torch.save(net.state_dict(), model_file)
 
 
 if __name__ == '__main__':
-    train('logs/comma10k/test_128x96_0', epochs=10)
+    train('logs/comma10k/test_128x96_1', epochs=50, random_flip=True)
