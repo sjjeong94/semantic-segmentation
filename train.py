@@ -25,10 +25,10 @@ def set_seed(seed):
 def train(
     logs_root,
     data_root='data/comma10k',
-    learning_rate=0.0003,
+    learning_rate=0.001,
     weight_decay=0,
     batch_size=8,
-    epochs=1,
+    epochs=50,
     num_workers=2,
 ):
     set_seed(1234)
@@ -89,8 +89,8 @@ def train(
 
     criterion = nn.CrossEntropyLoss()
 
-    logger.info(net)
-    logger.info(device)
+    # logger.info(net)
+    # logger.info(device)
     logger.info(optimizer)
 
     logger.info('| %12s | %12s | %12s | %12s | %12s |' %
@@ -145,5 +145,4 @@ def train(
 if __name__ == '__main__':
     train(
         logs_root='logs/comma10k/test',
-        epochs=5,
     )
