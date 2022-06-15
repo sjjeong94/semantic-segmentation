@@ -76,7 +76,6 @@ class Normalize:
         self.std = torch.FloatTensor(std).reshape(-1, 1, 1)
     
     def __call__(self, image, target):
-        print('a', image.shape, self.mean.shape, self.std.shape)
         image = (image - self.mean) / self.std
         return image, target
         
