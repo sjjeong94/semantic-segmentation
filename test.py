@@ -1,12 +1,8 @@
 import cv2
 import torch
-import torchvision
-import videocv
-import numpy as np
-import segmentation_models_pytorch as smp
 
-import transforms
 import datasets
+import transforms
 
 
 def test_dataset():

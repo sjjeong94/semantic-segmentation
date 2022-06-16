@@ -7,7 +7,7 @@ import segmentation_models_pytorch as smp
 
 import datasets
 import transforms
-
+import metrics
 
 class Module:
     def __init__(self, model_path):
@@ -33,10 +33,9 @@ class Module:
     def __call__(self, image):
         x = self.transform(image).unsqueeze(0)
         x = x.to(self.device)
-        with torch.inference_mode():
-            out = self.net(x)
-            y = torch.argmax(out, 1)
-            y = y.cpu().numpy().squeeze()
+        out = self.net(x)
+        y = torch.argmax(out, 1)
+        y = y.cpu().numpy().squeeze()
         return y
 
 
@@ -83,6 +82,7 @@ def visualze_video(
 
 
 def visualize_eval(
+    data_root='./data/comma10k',
     model_path='./logs/comma10k/test/models/model_050.pth',
     size=(640, 480),
 ):
@@ -90,7 +90,7 @@ def visualize_eval(
     module = Module(model_path)
 
     dataset = datasets.Comma10k(
-        './data/comma10k',
+        data_root,
         False,
         transforms.Resize(size)
     )
@@ -105,8 +105,19 @@ def visualize_eval(
         mask = cv2.cvtColor(datasets.label_decode(label), cv2.COLOR_RGB2BGR)
         pred = cv2.cvtColor(datasets.label_decode(y), cv2.COLOR_RGB2BGR)
 
-        error = np.zeros(image.shape, np.uint8)
-        error[y != label] = (0, 255, 255)
+        results = metrics.calculate_results(label, y, 5)
+        print('%8s %8s %8s %8s %8s' %
+              ('class', 'mask', 'pred', 'inter', 'union'))
+        for c, r in enumerate(results):
+            print('%8d %8d %8d %8d %8d' %
+                  (c, r['mask'], r['pred'], r['inter'], r['union']))
+        print()
+
+        #error = np.zeros(image.shape, np.uint8)
+        #error[y != label] = (0, 255, 255)
+
+        error = mask.copy()
+        error[y == label] = 0
 
         view_top = np.concatenate([image, error], axis=1)
         view_bot = np.concatenate([mask, pred], axis=1)
