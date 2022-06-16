@@ -6,6 +6,7 @@ import torchvision
 import segmentation_models_pytorch as smp
 
 import datasets
+import transforms
 
 
 class Module:
@@ -39,7 +40,7 @@ class Module:
         return y
 
 
-def main(
+def visualze_video(
     video_path='./videos/test.mp4',
     save_path='./videos/segmentation.mp4',
     model_path='./logs/comma10k/test/models/model_050.pth',
@@ -81,5 +82,54 @@ def main(
         cv2.imshow('view', view)
 
 
+def visualize_eval(
+    model_path='./logs/comma10k/test/models/model_050.pth',
+    size=(640, 480),
+):
+
+    module = Module(model_path)
+
+    dataset = datasets.Comma10k(
+        './data/comma10k',
+        False,
+        transforms.Resize(size)
+    )
+
+    idx = 0
+    while True:
+        image, label = dataset[idx]
+
+        y = module(image)
+
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        mask = cv2.cvtColor(datasets.label_decode(label), cv2.COLOR_RGB2BGR)
+        pred = cv2.cvtColor(datasets.label_decode(y), cv2.COLOR_RGB2BGR)
+
+        error = np.zeros(image.shape, np.uint8)
+        error[y != label] = (0, 255, 255)
+
+        view_top = np.concatenate([image, error], axis=1)
+        view_bot = np.concatenate([mask, pred], axis=1)
+        view = np.concatenate([view_top, view_bot])
+
+        cv2.imshow('view', view)
+
+        key = cv2.waitKey(0)
+        if key == 27:
+            break
+        elif key == ord('q'):
+            idx -= 1
+        else:
+            idx += 1
+
+        if idx < 0:
+            idx = len(dataset)-1
+        elif idx >= len(dataset):
+            idx = 0
+
+
 if __name__ == '__main__':
-    main()
+    # visualze_video(
+    #    model_path='./logs/comma10k/test1/models/model_050.pth',
+    # )
+    visualize_eval()

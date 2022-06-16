@@ -12,8 +12,9 @@ import datasets
 def test_dataset():
     T_compose = transforms.Compose([
         transforms.RandomHorizontalFlip(),
-        transforms.RandomResize(512, 1024),
-        transforms.RandomCrop(size=512),
+        transforms.Resize((640, 480)),
+        # transforms.RandomResize(512, 1024),
+        # transforms.RandomCrop(size=512),
     ])
     dataset = datasets.Comma10k('./data/comma10k', transform=T_compose)
 
@@ -22,7 +23,6 @@ def test_dataset():
         print('%d / %d' % (idx, len(dataset)))
 
         image, label = dataset[idx]
-        print(label.dtype)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         label = cv2.cvtColor(datasets.label_decode(label), cv2.COLOR_RGB2BGR)
 
@@ -41,6 +41,8 @@ def test_dataset():
             idx = len(dataset)-1
         elif idx >= len(dataset):
             idx = 0
+
+    cv2.destroyAllWindows()
 
 
 def test_dataset2():
@@ -87,16 +89,7 @@ def test_dataloader():
     print(y.shape, y.dtype)
 
 
-def test_model():
-    backbone = 'efficientnet-b0'
-    net = smp.Unet(backbone, classes=5)
-    x = torch.randn((8, 3, 512, 512))
-    out = net(x)
-    print(out.shape)
-
-
 if __name__ == '__main__':
     test_dataset()
     test_dataset2()
     test_dataloader()
-    test_model()

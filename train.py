@@ -25,7 +25,7 @@ def set_seed(seed):
 def train(
     logs_root,
     data_root='data/comma10k',
-    learning_rate=0.001,
+    learning_rate=0.0003,
     weight_decay=0,
     batch_size=8,
     epochs=50,
@@ -59,6 +59,7 @@ def train(
 
     T_train = transforms.Compose([
         transforms.RandomCrop(size=512),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -144,5 +145,5 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/comma10k/test',
+        logs_root='logs/comma10k/test1',
     )

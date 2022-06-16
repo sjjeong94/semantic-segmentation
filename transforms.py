@@ -25,6 +25,16 @@ class RandomHorizontalFlip:
         return image, target
 
 
+class Resize:
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, image, target):
+        image = cv2.resize(image, self.size, interpolation=cv2.INTER_LANCZOS4)
+        target = cv2.resize(target, self.size, interpolation=cv2.INTER_NEAREST)
+        return image, target
+
+
 class RandomResize:
     def __init__(self, min_size, max_size=None):
         self.min_size = min_size
@@ -70,12 +80,12 @@ class ToTensor:
         target = torch.from_numpy(target)
         return image, target
 
+
 class Normalize:
     def __init__(self, mean, std):
         self.mean = torch.FloatTensor(mean).reshape(-1, 1, 1)
         self.std = torch.FloatTensor(std).reshape(-1, 1, 1)
-    
+
     def __call__(self, image, target):
         image = (image - self.mean) / self.std
         return image, target
-        
