@@ -1,19 +1,7 @@
-import random
-
-import numpy as np
+import cv2
 import torch
-from torchvision import transforms as T
-from torchvision.transforms import functional as F
-
-
-def pad_if_smaller(img, size, fill=0):
-    min_size = min(img.size)
-    if min_size < size:
-        ow, oh = img.size
-        padh = size - oh if oh < size else 0
-        padw = size - ow if ow < size else 0
-        img = F.pad(img, (0, 0, padw, padh), fill=fill)
-    return img
+import random
+import numpy as np
 
 
 class Compose:
@@ -21,8 +9,19 @@ class Compose:
         self.transforms = transforms
 
     def __call__(self, image, target):
-        for t in self.transforms:
-            image, target = t(image, target)
+        for transform in self.transforms:
+            image, target = transform(image, target)
+        return image, target
+
+
+class RandomHorizontalFlip:
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, image, target):
+        if random.random() < self.p:
+            image = np.fliplr(image)
+            target = np.fliplr(target)
         return image, target
 
 
@@ -34,21 +33,13 @@ class RandomResize:
         self.max_size = max_size
 
     def __call__(self, image, target):
-        size = random.randint(self.min_size, self.max_size)
-        image = F.resize(image, size)
-        target = F.resize(
-            target, size, interpolation=T.InterpolationMode.NEAREST)
-        return image, target
-
-
-class RandomHorizontalFlip:
-    def __init__(self, flip_prob):
-        self.flip_prob = flip_prob
-
-    def __call__(self, image, target):
-        if random.random() < self.flip_prob:
-            image = F.hflip(image)
-            target = F.hflip(target)
+        h, w, c = image.shape
+        ratio = w / h
+        hr = random.randint(self.min_size, self.max_size)
+        wr = round(hr * ratio)
+        size = (wr, hr)
+        image = cv2.resize(image, size, interpolation=cv2.INTER_LANCZOS4)
+        target = cv2.resize(target, size, interpolation=cv2.INTER_NEAREST)
         return image, target
 
 
@@ -57,45 +48,34 @@ class RandomCrop:
         self.size = size
 
     def __call__(self, image, target):
-        image = pad_if_smaller(image, self.size)
-        target = pad_if_smaller(target, self.size, fill=255)
-        crop_params = T.RandomCrop.get_params(image, (self.size, self.size))
-        image = F.crop(image, *crop_params)
-        target = F.crop(target, *crop_params)
+        h, w, c = image.shape
+        xs = random.randint(0, w - self.size)
+        ys = random.randint(0, h - self.size)
+        xe = xs + self.size
+        ye = ys + self.size
+        image = image[ys:ye, xs:xe]
+        target = target[ys:ye, xs:xe]
         return image, target
 
 
-class CenterCrop:
-    def __init__(self, size):
-        self.size = size
+class ToTensor:
+    def __init__(self):
+        return
 
     def __call__(self, image, target):
-        image = F.center_crop(image, self.size)
-        target = F.center_crop(target, self.size)
+        image = image.transpose(2, 0, 1)
+        image = image.astype(np.float32) / 255
+        target = target.astype(np.int64)
+        image = torch.from_numpy(image)
+        target = torch.from_numpy(target)
         return image, target
-
-
-class PILToTensor:
-    def __call__(self, image, target):
-        image = F.pil_to_tensor(image)
-        target = torch.as_tensor(np.array(target), dtype=torch.int64)
-        return image, target
-
-
-class ConvertImageDtype:
-    def __init__(self, dtype):
-        self.dtype = dtype
-
-    def __call__(self, image, target):
-        image = F.convert_image_dtype(image, self.dtype)
-        return image, target
-
 
 class Normalize:
     def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
+        self.mean = torch.FloatTensor(mean).reshape(-1, 1, 1)
+        self.std = torch.FloatTensor(std).reshape(-1, 1, 1)
+    
     def __call__(self, image, target):
-        image = F.normalize(image, mean=self.mean, std=self.std)
+        image = (image - self.mean) / self.std
         return image, target
+        

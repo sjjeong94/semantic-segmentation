@@ -5,10 +5,11 @@ import random
 import torch
 import torch.nn as nn
 import numpy as np
-from torchvision.models.segmentation import deeplabv3_mobilenet_v3_large
-from dataset import Comma10k
-import transforms as T
+import segmentation_models_pytorch as smp
 from tqdm import tqdm
+
+import datasets
+import transforms
 
 
 def set_seed(seed):
@@ -23,17 +24,12 @@ def set_seed(seed):
 
 def train(
     logs_root,
-    net=deeplabv3_mobilenet_v3_large(num_classes=5),
-    data_root='data/comma10k_128x96',
-    learning_rate=0.0003,
+    data_root='data/comma10k',
+    learning_rate=0.001,
     weight_decay=0,
-    batch_size=16,
-    epochs=1,
-    normalize=False,
-    random_crop=False,
-    random_flip=False,
+    batch_size=8,
+    epochs=50,
     num_workers=2,
-    pin_memory=True,
 ):
     set_seed(1234)
     os.makedirs(logs_root, exist_ok=True)
@@ -52,6 +48,8 @@ def train(
     logger.addHandler(file_handler)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    backbone = 'mobilenet_v2'  # 'efficientnet-b0'
+    net = smp.Unet(backbone, classes=5)
     net = net.to(device)
 
     optimizer = torch.optim.AdamW(
@@ -59,29 +57,41 @@ def train(
         lr=learning_rate,
         weight_decay=weight_decay)
 
-    T_train = []
-    if random_crop:
-        T_train.extend([T.RandomResize(96, 192), T.RandomCrop(96)])
-    if random_flip:
-        T_train.append(T.RandomHorizontalFlip(0.5))
-    T_train = T.Compose(T_train)
-    print(T_train)
+    T_train = transforms.Compose([
+        transforms.RandomCrop(size=512),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225])])
 
-    train_dataset = Comma10k(
-        data_root, True, normalize=normalize, transform=T_train)
-    val_dataset = Comma10k(data_root, False, normalize=normalize)
+    T_val = transforms.Compose([
+        transforms.RandomCrop(size=512),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225])])
+
+    train_dataset = datasets.Comma10k(data_root, True, T_train)
+    val_dataset = datasets.Comma10k(data_root, False, T_val)
 
     train_loader = torch.utils.data.DataLoader(
-        dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+    )
     val_loader = torch.utils.data.DataLoader(
-        dataset=val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+        dataset=val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+    )
 
-    logger.info(net)
-    logger.info(device)
-    logger.info(optimizer)
-
-    scaler = torch.cuda.amp.GradScaler()
     criterion = nn.CrossEntropyLoss()
+
+    # logger.info(net)
+    # logger.info(device)
+    logger.info(optimizer)
 
     logger.info('| %12s | %12s | %12s | %12s | %12s |' %
                 ('epoch', 'time_train', 'time_val', 'loss_train', 'loss_val'))
@@ -93,16 +103,17 @@ def train(
         for x, y in tqdm(train_loader):
             x = x.to(device)
             y = y.to(device)
+
             optimizer.zero_grad()
 
-            with torch.cuda.amp.autocast():
-                out = net(x)['out']
-                loss = criterion(out, y)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            out = net(x)
+            loss = criterion(out, y)
+
+            loss.backward()
+            optimizer.step()
 
             losses += loss.detach()
+
         loss_train = losses / len(train_loader)
         t1 = time.time()
         time_train = t1 - t0
@@ -110,15 +121,16 @@ def train(
         t0 = time.time()
         net.eval()
         losses = 0
-        for x, y in tqdm(val_loader):
-            with torch.no_grad():
+        with torch.no_grad():
+            for x, y in tqdm(val_loader):
                 x = x.to(device)
                 y = y.to(device)
 
-                out = net(x)['out']
+                out = net(x)
                 loss = criterion(out, y)
 
                 losses += loss.detach()
+
         loss_val = losses / len(val_loader)
         t1 = time.time()
         time_val = t1 - t0
@@ -131,4 +143,6 @@ def train(
 
 
 if __name__ == '__main__':
-    train('logs/comma10k/test_128x96_1', epochs=50, random_flip=True)
+    train(
+        logs_root='logs/comma10k/test',
+    )
