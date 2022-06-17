@@ -9,6 +9,7 @@ import datasets
 import transforms
 import metrics
 
+
 class Module:
     def __init__(self, model_path):
 
@@ -83,7 +84,7 @@ def visualze_video(
 
 def visualize_eval(
     data_root='./data/comma10k',
-    model_path='./logs/comma10k/test/models/model_050.pth',
+    model_path='./logs/comma10k/test2/models/model_050.pth',
     size=(640, 480),
 ):
 
@@ -140,7 +141,7 @@ def visualize_eval(
 
 
 if __name__ == '__main__':
-    # visualze_video(
-    #    model_path='./logs/comma10k/test1/models/model_050.pth',
-    # )
-    visualize_eval()
+    visualze_video(
+        model_path='./logs/comma10k/test2/models/model_050.pth',
+    )
+    # visualize_eval()

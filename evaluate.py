@@ -204,5 +204,8 @@ def evaluate2(
 
 
 if __name__ == '__main__':
-    evaluate()
-    evaluate2()
+    # evaluate()
+    evaluate2(
+        model_path='./logs/comma10k/test2/models/model_050.pth',
+        size=(640, 480)
+    )

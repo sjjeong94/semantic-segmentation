@@ -57,7 +57,17 @@ def train(
         lr=learning_rate,
         weight_decay=weight_decay)
 
+    model_files = sorted(os.listdir(model_path))
+    if len(model_files):
+        checkpoint_path = os.path.join(model_path, model_files[-1])
+        print('Load Checkpoint -> ', checkpoint_path)
+        checkpoint = torch.load(checkpoint_path)
+        net.load_state_dict(checkpoint['model'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        epoch_begin = checkpoint['epoch']
+
     T_train = transforms.Compose([
+        transforms.RandomResize(512, 1024),
         transforms.RandomCrop(size=512),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
@@ -97,7 +107,7 @@ def train(
     logger.info('| %12s | %12s | %12s | %12s | %12s |' %
                 ('epoch', 'time_train', 'time_val', 'loss_train', 'loss_val'))
 
-    for epoch in range(epochs):
+    for epoch in range(epoch_begin, epochs):
         t0 = time.time()
         net.train()
         losses = 0
@@ -139,13 +149,18 @@ def train(
         logger.info('| %12d | %12.4f | %12.4f | %12.4f | %12.4f |' %
                     (epoch + 1, time_train, time_val, loss_train, loss_val))
 
-        model_file = os.path.join(model_path, 'model_%03d.pth' % (epoch + 1))
-        torch.save(net.state_dict(), model_file)
+        model_file = os.path.join(model_path, 'model_%03d.pt' % (epoch + 1))
+        torch.save({
+            'epoch': epoch + 1,
+            'model': net.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'loss': loss_val.item(),
+        }, model_file)
 
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/comma10k/test2',
-        epochs=100,
+        logs_root='logs/comma10k/test3',
+        epochs=2,
         learning_rate=0.0001,
     )
