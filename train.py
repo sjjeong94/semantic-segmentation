@@ -66,7 +66,7 @@ def train(
             std=[0.229, 0.224, 0.225])])
 
     T_val = transforms.Compose([
-        transforms.RandomCrop(size=512),
+        transforms.Resize((640, 480)),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -145,5 +145,7 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/comma10k/test1',
+        logs_root='logs/comma10k/test2',
+        epochs=100,
+        learning_rate=0.0001,
     )
