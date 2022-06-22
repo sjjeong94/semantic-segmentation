@@ -16,7 +16,9 @@ class Module:
         device = device = 'cuda' if torch.cuda.is_available() else 'cpu'
         backbone = 'mobilenet_v2'  # 'efficientnet-b0'
         net = smp.Unet(backbone, classes=5)
-        net.load_state_dict(torch.load(model_path))
+
+        checkpoint = torch.load(model_path)
+        net.load_state_dict(checkpoint['model'])
         net = net.to(device)
         net = net.eval()
 
@@ -142,6 +144,6 @@ def visualize_eval(
 
 if __name__ == '__main__':
     visualze_video(
-        model_path='./logs/comma10k/test2/models/model_050.pth',
+        model_path='./logs/comma10k/test3/models/model_100.pt',
     )
     # visualize_eval()

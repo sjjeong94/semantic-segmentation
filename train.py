@@ -31,6 +31,7 @@ def train(
     epochs=50,
     num_workers=2,
 ):
+
     set_seed(1234)
     os.makedirs(logs_root, exist_ok=True)
     model_path = os.path.join(logs_root, 'models')
@@ -57,6 +58,7 @@ def train(
         lr=learning_rate,
         weight_decay=weight_decay)
 
+    epoch_begin = 0
     model_files = sorted(os.listdir(model_path))
     if len(model_files):
         checkpoint_path = os.path.join(model_path, model_files[-1])
@@ -104,8 +106,8 @@ def train(
     # logger.info(device)
     logger.info(optimizer)
 
-    logger.info('| %12s | %12s | %12s | %12s | %12s |' %
-                ('epoch', 'time_train', 'time_val', 'loss_train', 'loss_val'))
+    logger.info('| %12s | %12s | %12s | %12s |' %
+                ('epoch', 'time_train', 'loss_train', 'loss_val'))
 
     for epoch in range(epoch_begin, epochs):
         t0 = time.time()
@@ -146,8 +148,10 @@ def train(
         t1 = time.time()
         time_val = t1 - t0
 
-        logger.info('| %12d | %12.4f | %12.4f | %12.4f | %12.4f |' %
-                    (epoch + 1, time_train, time_val, loss_train, loss_val))
+        time_total = time_train + time_val
+
+        logger.info('| %12d | %12.4f | %12.4f | %12.4f |' %
+                    (epoch + 1, time_total, loss_train, loss_val))
 
         model_file = os.path.join(model_path, 'model_%03d.pt' % (epoch + 1))
         torch.save({
@@ -161,6 +165,6 @@ def train(
 if __name__ == '__main__':
     train(
         logs_root='logs/comma10k/test3',
-        epochs=2,
-        learning_rate=0.0001,
+        epochs=110,
+        learning_rate=0.00001,
     )
