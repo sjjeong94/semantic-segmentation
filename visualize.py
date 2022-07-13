@@ -144,6 +144,6 @@ def visualize_eval(
 
 if __name__ == '__main__':
     visualze_video(
-        model_path='./logs/comma10k/test3/models/model_100.pt',
+        model_path='./logs/comma10k/releases/v220622_1.pt',
     )
     # visualize_eval()

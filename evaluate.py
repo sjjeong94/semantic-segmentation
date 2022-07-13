@@ -108,10 +108,7 @@ def evaluate(
 
 
 if __name__ == '__main__':
-    # evaluate()
-    for i in range(101, 111):
-        print('epoch ', i)
-        evaluate(
-            model_path='./logs/comma10k/test3/models/model_%03d.pt' % i,
-            size=(640, 480)
-        )
+    evaluate(
+        model_path='./logs/comma10k/releases/v220622_0.pt',
+        size=(640, 480)
+    )

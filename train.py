@@ -69,7 +69,7 @@ def train(
         epoch_begin = checkpoint['epoch']
 
     T_train = transforms.Compose([
-        transforms.RandomResize(512, 1024),
+        #transforms.RandomResize(512, 1024),
         transforms.RandomCrop(size=512),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
@@ -164,7 +164,7 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/comma10k/test3',
-        epochs=110,
-        learning_rate=0.00001,
+        logs_root='logs/comma10k/220622_1',
+        epochs=100,
+        learning_rate=0.0001,
     )
