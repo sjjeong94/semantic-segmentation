@@ -64,7 +64,7 @@ def visualze_video(
 
         y = module(x)
 
-        mask = datasets.label_decode(y)
+        mask = datasets.get_color(y)
         mask = cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
 
         edge = cv2.Laplacian(y.astype(np.uint8), -1)
@@ -94,7 +94,7 @@ def visualize_eval(
 
     dataset = datasets.Comma10k(
         data_root,
-        False,
+        'val',
         transforms.Resize(size)
     )
 
@@ -105,8 +105,8 @@ def visualize_eval(
         y = module(image)
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        mask = cv2.cvtColor(datasets.label_decode(label), cv2.COLOR_RGB2BGR)
-        pred = cv2.cvtColor(datasets.label_decode(y), cv2.COLOR_RGB2BGR)
+        mask = cv2.cvtColor(dataset.get_color(label), cv2.COLOR_RGB2BGR)
+        pred = cv2.cvtColor(dataset.get_color(y), cv2.COLOR_RGB2BGR)
 
         results = metrics.calculate_results(label, y, 5)
         print('%8s %8s %8s %8s %8s' %
