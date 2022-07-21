@@ -44,9 +44,10 @@ def test_dataset():
 def test_cityscape():
 
     T_compose = transforms.Compose([
-        transforms.RandomResize(512, 1024),
-        transforms.RandomCrop(size=512),
-        #transforms.Resize((512, 256)),
+        #transforms.RandomResize(512, 1024),
+        # transforms.RandomCrop(size=512),
+        transforms.RandomResizedCrop(size=(1024, 512)),
+        # transforms.Resize((512, 256)),
         # transforms.RandomHorizontalFlip(),
     ])
 

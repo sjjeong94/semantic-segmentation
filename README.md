@@ -11,6 +11,7 @@ This is a PyTorch implementation of semantic segmentation models on [Comma10k](h
 | version  | miou (2048x1024) | miou (1024x512) | miou (512x256) |
 | -------- | ---------------- | --------------- | -------------- |
 | 220720.0 | 47.20            | 58.09           | 52.53          |
+| 220721.0 | 58.44            | 60.01           | 50.34          |
 
 ### License
 

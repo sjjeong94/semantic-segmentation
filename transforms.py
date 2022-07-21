@@ -68,6 +68,29 @@ class RandomCrop:
         return image, target
 
 
+class RandomResizedCrop:
+    def __init__(self, size, scale=(0.5, 2.0)):
+        self.size = size
+        self.scale = scale
+
+    def __call__(self, image, target):
+        h, w, c = image.shape
+
+        s = random.uniform(self.scale[0], self.scale[1])
+        w_crop, h_crop = round(self.size[0] / s), round(self.size[1] / s)
+        xs = random.randint(0, w - w_crop)
+        ys = random.randint(0, h - h_crop)
+        xe = xs + w_crop
+        ye = ys + h_crop
+        image = image[ys:ye, xs:xe]
+        target = target[ys:ye, xs:xe]
+
+        image = cv2.resize(image, self.size, interpolation=cv2.INTER_LANCZOS4)
+        target = cv2.resize(target, self.size, interpolation=cv2.INTER_NEAREST)
+
+        return image, target
+
+
 class ToTensor:
     def __init__(self):
         return

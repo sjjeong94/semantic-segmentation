@@ -27,7 +27,7 @@ def train(
     data_root='data/cityscapes',
     learning_rate=0.0003,
     weight_decay=0,
-    batch_size=8,
+    batch_size=6,
     epochs=50,
     num_workers=4,
 ):
@@ -69,8 +69,9 @@ def train(
         epoch_begin = checkpoint['epoch']
 
     T_train = transforms.Compose([
-        transforms.RandomResize(320, 640),
-        transforms.RandomCrop(size=320),
+        #transforms.RandomResize(320, 640),
+        # transforms.RandomCrop(size=320),
+        transforms.RandomResizedCrop(size=(512, 512), scale=(0.5, 1.0)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(
@@ -117,7 +118,7 @@ def train(
             x = x.to(device)
             y = y.to(device)
 
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
 
             out = net(x)
             loss = criterion(out, y)
@@ -164,7 +165,7 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/cityscapes/220720',
-        epochs=100,
+        logs_root='logs/cityscapes/220721',
+        epochs=200,
         learning_rate=0.0003,
     )

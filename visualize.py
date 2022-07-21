@@ -11,11 +11,11 @@ import metrics
 
 
 class Module:
-    def __init__(self, model_path):
+    def __init__(self, model_path, num_classes=5):
 
         device = device = 'cuda' if torch.cuda.is_available() else 'cpu'
         backbone = 'mobilenet_v2'  # 'efficientnet-b0'
-        net = smp.Unet(backbone, classes=5)
+        net = smp.Unet(backbone, classes=num_classes)
 
         checkpoint = torch.load(model_path)
         net.load_state_dict(checkpoint['model'])
@@ -43,13 +43,14 @@ class Module:
 
 
 def visualze_video(
+    model_path,
+    num_classes=5,
     video_path='./videos/test.mp4',
     save_path='./videos/segmentation.mp4',
-    model_path='./logs/comma10k/test/models/model_050.pth',
     size=(1024, 576),
 ):
 
-    module = Module(model_path)
+    module = Module(model_path, num_classes)
 
     video = videocv.Video(video_path)
     writer = videocv.Writer(save_path, video.fps, (size[0]*2, size[1]*2))
@@ -64,7 +65,7 @@ def visualze_video(
 
         y = module(x)
 
-        mask = datasets.get_color(y)
+        mask = datasets.Cityscapes.get_color(y)
         mask = cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
 
         edge = cv2.Laplacian(y.astype(np.uint8), -1)
@@ -144,6 +145,7 @@ def visualize_eval(
 
 if __name__ == '__main__':
     visualze_video(
-        model_path='./logs/comma10k/releases/v220622_1.pt',
+        model_path='./logs/cityscapes/220721/models/model_200.pt',
+        num_classes=20,
     )
     # visualize_eval()
