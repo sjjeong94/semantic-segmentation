@@ -165,7 +165,8 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/cityscapes/220721',
+        logs_root='logs/cityscapes/220723',
         epochs=200,
         learning_rate=0.0003,
+        weight_decay=0.0001,
     )

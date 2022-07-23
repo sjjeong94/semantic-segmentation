@@ -145,7 +145,7 @@ def visualize_eval(
 
 if __name__ == '__main__':
     visualze_video(
-        model_path='./logs/cityscapes/220721/models/model_200.pt',
+        model_path='./logs/cityscapes/220723/models/model_200.pt',
         num_classes=20,
     )
     # visualize_eval()

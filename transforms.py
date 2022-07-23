@@ -48,7 +48,7 @@ class RandomResize:
         hr = random.randint(self.min_size, self.max_size)
         wr = round(hr * ratio)
         size = (wr, hr)
-        image = cv2.resize(image, size, interpolation=cv2.INTER_LANCZOS4)
+        image = cv2.resize(image, size, interpolation=cv2.INTER_LINEAR)
         target = cv2.resize(target, size, interpolation=cv2.INTER_NEAREST)
         return image, target
 
@@ -85,7 +85,7 @@ class RandomResizedCrop:
         image = image[ys:ye, xs:xe]
         target = target[ys:ye, xs:xe]
 
-        image = cv2.resize(image, self.size, interpolation=cv2.INTER_LANCZOS4)
+        image = cv2.resize(image, self.size, interpolation=cv2.INTER_LINEAR)
         target = cv2.resize(target, self.size, interpolation=cv2.INTER_NEAREST)
 
         return image, target

@@ -209,6 +209,6 @@ def evaluate_cityscapes(
 
 if __name__ == '__main__':
     evaluate_cityscapes(
-        model_path='./logs/cityscapes/220721/models/model_200.pt',
+        model_path='./logs/cityscapes/220723/models/model_200.pt',
         size=(512, 256)
     )
