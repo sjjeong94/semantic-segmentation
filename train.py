@@ -22,12 +22,29 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 
+def make_logger(name=None, filename="test.log"):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("%(asctime)s - %(message)s")
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(formatter)
+    logger.addHandler(console)
+
+    file_handler = logging.FileHandler(filename=filename)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    return logger
+
+
 def train(
     logs_root,
-    data_root='data/cityscapes',
+    data_root='data/comma10k',
     learning_rate=0.0003,
     weight_decay=0,
-    batch_size=6,
+    batch_size=4,
     epochs=50,
     num_workers=4,
 ):
@@ -37,20 +54,11 @@ def train(
     model_path = os.path.join(logs_root, 'models')
     os.makedirs(model_path, exist_ok=True)
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-    file_handler = logging.FileHandler(
-        os.path.join(logs_root, 'train.log'))
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    logger = make_logger(filename=os.path.join(logs_root, 'train.log'))
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    backbone = 'mobilenet_v2'  # 'efficientnet-b0'
-    net = smp.Unet(backbone, classes=20)  # comma10k -> 5, cityscapes -> 20
+    backbone = 'efficientnet-b0'
+    net = smp.Unet(backbone, classes=5)  # comma10k -> 5, cityscapes -> 20
     net = net.to(device)
 
     optimizer = torch.optim.AdamW(
@@ -69,9 +77,7 @@ def train(
         epoch_begin = checkpoint['epoch']
 
     T_train = transforms.Compose([
-        #transforms.RandomResize(320, 640),
-        # transforms.RandomCrop(size=320),
-        transforms.RandomResizedCrop(size=(512, 512), scale=(0.5, 1.0)),
+        transforms.RandomResizedCrop(size=(416, 416), scale=(0.5, 1.0)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(
@@ -79,14 +85,14 @@ def train(
             std=[0.229, 0.224, 0.225])])
 
     T_val = transforms.Compose([
-        transforms.Resize((1024, 512)),
+        transforms.Resize((640, 480)),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225])])
 
-    train_dataset = datasets.Cityscapes(data_root, 'train', T_train)
-    val_dataset = datasets.Cityscapes(data_root, 'val', T_val)
+    train_dataset = datasets.Comma10k(data_root, 'train', T_train)
+    val_dataset = datasets.Comma10k(data_root, 'val', T_val)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset,
@@ -165,8 +171,10 @@ def train(
 
 if __name__ == '__main__':
     train(
-        logs_root='logs/cityscapes/220723',
-        epochs=200,
-        learning_rate=0.0003,
+        logs_root='logs/comma10k/220831',
+        data_root='D:/comma10k',
+        epochs=110,
+        batch_size=8,
+        learning_rate=0.00001,
         weight_decay=0.0001,
     )

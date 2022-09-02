@@ -16,7 +16,7 @@ def evaluate(
     num_workers=2,
 ):
     device = device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    backbone = 'mobilenet_v2'  # 'efficientnet-b0'
+    backbone = 'efficientnet-b0'
     net = smp.Unet(backbone, classes=5)
     checkpoint = torch.load(model_path)
     net.load_state_dict(checkpoint['model'])
@@ -208,7 +208,8 @@ def evaluate_cityscapes(
 
 
 if __name__ == '__main__':
-    evaluate_cityscapes(
-        model_path='./logs/cityscapes/220723/models/model_200.pt',
-        size=(512, 256)
+    evaluate(
+        data_root='D:/comma10k',
+        model_path='./logs/comma10k/models/220902.pt',
+        size=(1280, 960)
     )

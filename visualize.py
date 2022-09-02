@@ -14,7 +14,7 @@ class Module:
     def __init__(self, model_path, num_classes=5):
 
         device = device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        backbone = 'mobilenet_v2'  # 'efficientnet-b0'
+        backbone = 'efficientnet-b0'  # 'efficientnet-b0'
         net = smp.Unet(backbone, classes=num_classes)
 
         checkpoint = torch.load(model_path)
@@ -37,9 +37,21 @@ class Module:
         x = self.transform(image).unsqueeze(0)
         x = x.to(self.device)
         out = self.net(x)
+
         y = torch.argmax(out, 1)
         y = y.cpu().numpy().squeeze()
-        return y
+
+        p = torch.softmax(out, dim=1)
+        entropy = -torch.sum(p * torch.log(p), dim=1)
+        entropy = entropy.cpu().numpy().squeeze()
+
+        return y, entropy
+
+
+def get_maximum_entropy(n):
+    p = np.ones(n, dtype=float) / n
+    maximum_entropy = -np.sum(p * np.log(p))
+    return maximum_entropy
 
 
 def visualze_video(
@@ -49,11 +61,13 @@ def visualze_video(
     save_path='./videos/segmentation.mp4',
     size=(1024, 576),
 ):
-
+    print(model_path)
     module = Module(model_path, num_classes)
 
     video = videocv.Video(video_path)
     writer = videocv.Writer(save_path, video.fps, (size[0]*2, size[1]*2))
+
+    me = get_maximum_entropy(num_classes)
 
     idx = 0
     while video():
@@ -63,9 +77,9 @@ def visualze_video(
         image = cv2.resize(video.frame, size, interpolation=cv2.INTER_AREA)
         x = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        y = module(x)
+        y, entropy = module(x)
 
-        mask = datasets.Cityscapes.get_color(y)
+        mask = datasets.Comma10k.get_color(y)
         mask = cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
 
         edge = cv2.Laplacian(y.astype(np.uint8), -1)
@@ -74,15 +88,21 @@ def visualze_video(
         overlap = image // 2 + mask // 2
         overlap[edge] = 255
 
+        entropy = (np.clip(entropy / me, 0, 1) * 255).astype(np.uint8)
+        entropy = cv2.applyColorMap(entropy, cv2.COLORMAP_INFERNO)
+
         boundary = np.zeros(image.shape, np.uint8)
         boundary[edge] = (0, 255, 255)
 
         view_top = np.concatenate([image, mask], axis=1)
-        view_bot = np.concatenate([overlap, boundary], axis=1)
+        view_bot = np.concatenate([overlap, entropy], axis=1)
         view = np.concatenate([view_top, view_bot])
         writer(view)
 
         cv2.imshow('view', view)
+        key = cv2.waitKey(1)
+        if key == 27:
+            break
 
 
 def visualize_eval(
@@ -103,7 +123,7 @@ def visualize_eval(
     while True:
         image, label = dataset[idx]
 
-        y = module(image)
+        y, _ = module(image)
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         mask = cv2.cvtColor(dataset.get_color(label), cv2.COLOR_RGB2BGR)
@@ -145,7 +165,8 @@ def visualize_eval(
 
 if __name__ == '__main__':
     visualze_video(
-        model_path='./logs/cityscapes/220723/models/model_200.pt',
-        num_classes=20,
+        model_path='./logs/comma10k/models/220902.pt',
+        video_path='D:/videos/test.mp4',
+        save_path='D:/videos/segmentation.mp4',
     )
     # visualize_eval()
